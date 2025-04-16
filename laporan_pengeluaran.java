@@ -35,13 +35,11 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
 
     try {
         // SQL Query
-        String sql = "SELECT tb.id_transaksi_beli, tb.tanggal, tb.id_suplier, s.nama_suplier, "
-                   + "tb.id_barang, b.nama_barang, tb.jumlah, b.harga, "
-                   + "(b.harga * tb.jumlah) AS total_harga "
-                   + "FROM transaksi_beli tb "
-                   + "INNER JOIN barang b ON tb.id_barang = b.id_barang "
-                   + "INNER JOIN suplier s ON tb.id_suplier = s.id_suplier "
-                   + "ORDER BY tb.id_transaksi_beli";
+        String sql = "SELECT id_transaksi, tanggal_transaksi, id_user, merk_barang, "
+                   + "id_barang, jenis_barang, jumlah, size, harga, "
+                   + "(harga * jumlah) AS total_harga "
+                   + "FROM pembelian "
+                   + "ORDER BY id_transaksi";
 
         PreparedStatement st = conn.prepareStatement(sql);
         ResultSet rs = st.executeQuery();
@@ -49,27 +47,28 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
         DecimalFormat df = new DecimalFormat("#,###.##");
 
         
-        Object[] columnNames = {"ID Transaksi Beli", "Tanggal", "ID Suplier", "Nama Suplier", 
-                                "ID Barang", "Nama Barang", "Jumlah", "Harga", "Total Harga"};
+        Object[] columnNames = {"ID Transaksi", "Tanggal transaksi", "ID user", "jenis barang", 
+                                "ID Barang", "merk Barang", "Jumlah", "Harga", "size", "Total Harga"};
         model.setColumnIdentifiers(columnNames);
 
         while (rs.next()) {
             
-            String idtransaksibeli = rs.getString("id_transaksi_beli");
-            String tanggal = rs.getString("tanggal");
-            String idSuplier = rs.getString("id_suplier");
-            String namaSuplier = rs.getString("nama_suplier");
+            String idTransaksi = rs.getString("id_transaksi");
+            String tanggalTransaksi = rs.getString("tanggal_transaksi");
+            String idUser = rs.getString("id_user");
+            String jenisBarang = rs.getString("jenis_barang");
             String idBarang = rs.getString("id_barang");
-            String namaBarang = rs.getString("nama_barang");
+            String namaBarang = rs.getString("merk_barang");
             int jumlah = rs.getInt("jumlah");
+            String size = rs.getString("size");
             BigDecimal harga = rs.getBigDecimal("harga");
 
             
             BigDecimal total_harga = harga.multiply(new BigDecimal(jumlah));
 
             
-            Object[] rowData = {idtransaksibeli, tanggal, idSuplier, namaSuplier, 
-                                idBarang, namaBarang, jumlah, df.format(harga), df.format(total_harga)};
+            Object[] rowData = {idTransaksi, tanggalTransaksi, idUser, jenisBarang, 
+                                idBarang, namaBarang, jumlah, size, df.format(harga), df.format(total_harga)};
             model.addRow(rowData);
             totalPengeluaran = totalPengeluaran.add(total_harga);
         }
@@ -119,14 +118,11 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
         System.out.println("Tanggal Akhir: " + tanggalAkhir);
 
         // Menyusun query SQL
-        String sql = "SELECT tb.id_transaksi_beli, tb.tanggal, tb.id_suplier, s.nama_suplier, "
-                   + "tb.id_barang, b.nama_barang, tb.jumlah, b.harga, "
-                   + "(b.harga * tb.jumlah) AS total_harga "
-                   + "FROM transaksi_beli tb "
-                   + "INNER JOIN barang b ON tb.id_barang = b.id_barang "
-                   + "INNER JOIN suplier s ON tb.id_suplier = s.id_suplier "
-                   + "WHERE DATE(tb.tanggal) BETWEEN ? AND ? "
-                   + "ORDER BY tb.id_transaksi_beli";
+        String sql = "SELECT id_transaksi, tanggal_transaksi, id_user, jenis_barang, "
+                   + "id_barang, merk_barang, jumlah, size, harga, "
+                   + "(harga * jumlah) AS total_harga "
+                   + "FROM pembelian "
+                   + "ORDER BY id_transaksi";
 
         PreparedStatement st = conn.prepareStatement(sql);
         st.setString(1, tanggalMulai); 
@@ -137,25 +133,26 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
         DecimalFormat df = new DecimalFormat("#,###.##");
 
         // Menetapkan nama kolom tabel
-        Object[] columnNames = {"ID Transaksi Beli", "Tanggal", "ID Suplier", "Nama Suplier", 
-                                "ID Barang", "Nama Barang", "Jumlah", "Harga", "Total Harga"};
+        Object[] columnNames = {"ID Transaksi ", "Tanggal transaksi", "ID user", "merk barang", 
+                                "ID Barang", "jenis Barang", "Jumlah", "size", "Harga", "Total Harga"};
         model.setColumnIdentifiers(columnNames);
 
         // Mengolah hasil query
         while (rs.next()) {
-            String idtransaksibeli = rs.getString("id_transaksi_beli");
-            String tanggal = rs.getString("tanggal");
-            String idSuplier = rs.getString("id_suplier");
-            String namaSuplier = rs.getString("nama_suplier");
+            String idtransaksi = rs.getString("id_transaksi");
+            String tanggaltransaksi = rs.getString("tanggal_transaksi");
+            String iduser = rs.getString("id_user");
+            String jenisbarang = rs.getString("jenis_barang");
             String idBarang = rs.getString("id_barang");
-            String namaBarang = rs.getString("nama_barang");
+            String merkbarang = rs.getString("merkbarang");
             int jumlah = rs.getInt("jumlah");
+            String size = rs.getString("size");
             BigDecimal harga = rs.getBigDecimal("harga");
             BigDecimal total_harga = harga.multiply(new BigDecimal(jumlah));
 
             // Menambahkan data baris ke tabel
-            Object[] rowData = {idtransaksibeli, tanggal, idSuplier, namaSuplier, 
-                                idBarang, namaBarang, jumlah, df.format(harga), df.format(total_harga)};
+            Object[] rowData = {idtransaksi, tanggaltransaksi, iduser, jenisbarang, 
+                                idBarang, merkbarang, jumlah, size, df.format(harga), df.format(total_harga)};
             model.addRow(rowData);
 
             // Menambah total pengeluaran
@@ -183,7 +180,7 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
      * regenerated by the Form Editor.
      */
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
@@ -202,13 +199,13 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
 
         jtabel.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "id_transaksi", "id_user", "tanggal_transaksi", "jumlah", "id_barang", "jenis_barang", "merk_barang", "size", "harga"
             }
         ));
         jScrollPane1.setViewportView(jtabel);
@@ -217,23 +214,22 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(223, 223, 223)
-                .addComponent(jlabelpengeluaran, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(212, 212, 212)
-                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(0, 297, Short.MAX_VALUE)
-                .addComponent(ctanggalawal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(266, 266, 266)
-                .addComponent(ctanggalakhir, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(289, 289, 289))
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(jPanel1Layout.createSequentialGroup()
-                    .addGap(285, 285, 285)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(223, 223, 223)
+                        .addComponent(jlabelpengeluaran, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(206, 206, 206)
+                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 37, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(285, Short.MAX_VALUE)))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(ctanggalawal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(266, 266, 266)
+                        .addComponent(ctanggalakhir, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(273, 273, 273))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -242,16 +238,16 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(ctanggalakhir, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(ctanggalawal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(17, 17, 17)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
-                    .addComponent(jlabelpengeluaran))
-                .addContainerGap(488, Short.MAX_VALUE))
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(jPanel1Layout.createSequentialGroup()
-                    .addGap(98, 98, 98)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(98, Short.MAX_VALUE)))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(17, 17, 17)
+                        .addComponent(jlabelpengeluaran)
+                        .addGap(27, 27, 27)
+                        .addComponent(jLabel2))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(82, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -266,7 +262,7 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
         );
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }// </editor-fold>                        
 
     /**
      * @param args the command line arguments
@@ -303,7 +299,7 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
         });
     }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify                     
     private com.toedter.calendar.JDateChooser ctanggalakhir;
     private com.toedter.calendar.JDateChooser ctanggalawal;
     private javax.swing.JLabel jLabel2;
@@ -311,5 +307,5 @@ public class laporan_pengeluaran extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel jlabelpengeluaran;
     private javax.swing.JTable jtabel;
-    // End of variables declaration//GEN-END:variables
+    // End of variables declaration                   
 }
