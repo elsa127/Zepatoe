@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import javax.swing.JOptionPane;
 import com.toedter.calendar.JDateChooser;
+import java.text.DecimalFormatSymbols;
 import static zepatoe.Zepatoe.conn;
 /**
  *
@@ -38,13 +39,11 @@ public class laporan_pemasukan extends javax.swing.JFrame {
 
     try {
         // Query SQL untuk mengambil data
-        String sql = "SELECT tj.id_transaksi, tj.tanggal, "
-                   + "tj.id_barang, b.merk_barang, tj.jumlah, b.harga, tj.username, "
-                   + "(b.harga * tj.jumlah) AS total_harga "
-                   + "FROM transaksi_jual tj "
-                   + "INNER JOIN barang b ON tj.id_barang = b.id_barang "
-                   + "INNER JOIN akun a ON tj.username = a.username "
-                   + "ORDER BY tj.id_transaksi_jual";
+        String sql = "SELECT id_transaksi, tanggal_transaksi, "
+                   + "id_barang, merk_barang, jenis_barang, size, jumlah, harga_satuan, "
+                   + "(harga_satuan * jumlah) AS total_harga "
+                   + "FROM penjualan ";
+     
 
         PreparedStatement st = conn.prepareStatement(sql);
 
@@ -57,86 +56,89 @@ public class laporan_pemasukan extends javax.swing.JFrame {
         DecimalFormat df = new DecimalFormat("#,###.##");
 
         // Menentukan header kolom untuk tabel
-        Object[] columnNames = {"ID Transaksi", "Tanggal", 
-                                "ID Barang", "Nama Barang", "Harga", "Jumlah", "Total Harga"};
+        Object[] columnNames = {"id_transaksi", "tanggal_transaksi", 
+                                "id_Barang", "merk_barang","jenis_barang","size", "harga_satuan", "jumlah"};
         model.setColumnIdentifiers(columnNames);
 
-        // Iterasi hasil query dan tambahkan ke tabel
+        // Iterasi hasil query
         while (rs.next()) {
-            String id_transaksi_jual = rs.getString("id_transaksi_jual");
-            String tgl_jual = rs.getString("tanggal");
-            BigDecimal harga = rs.getBigDecimal("harga");
+            String id_transaksi = rs.getString("id_transaksi");
+            String tanggal = rs.getString("tanggal_transaksi");
             String id_barang = rs.getString("id_barang");
-            String nama_barang = rs.getString("nama_barang");
+            String merk_barang = rs.getString("merk_barang");
+            String jenis_barang = rs.getString("jenis_barang");
+            String size = rs.getString("size");
+            BigDecimal harga_satuan = rs.getBigDecimal("harga_satuan");
             int jumlah = rs.getInt("jumlah");
 
             // Hitung total harga untuk baris ini
-            BigDecimal total_harga = harga.multiply(new BigDecimal(jumlah));
+            BigDecimal total_harga = harga_satuan.multiply(BigDecimal.valueOf(jumlah));
 
             // Tambahkan data ke tabel
-            Object[] rowData = {id_transaksi_jual, tgl_jual, 
-                                id_barang, nama_barang, df.format(harga), jumlah, df.format(total_harga)};
+            Object[] rowData = {
+                id_transaksi, tanggal, id_barang, merk_barang, jenis_barang, size,
+                "Rp " + df.format(harga_satuan),
+                jumlah,
+                "Rp " + df.format(total_harga)
+            };
             model.addRow(rowData);
 
-            // Tambahkan total harga ke total pemasukan
+            // Tambahkan ke total pemasukan
             totalPemasukan = totalPemasukan.add(total_harga);
         }
 
         // Tampilkan total pemasukan
         if (totalPemasukan.compareTo(BigDecimal.ZERO) > 0) {
-            totallabel.setText("Rp " + df.format(totalPemasukan));
+            totallabel.setText("Total Pemasukan: Rp " + df.format(totalPemasukan));
         } else {
-            totallabel.setText("Rp 0");
+            totallabel.setText("Total Pemasukan: Rp 0");
         }
 
-        // Tutup koneksi database
+        // Tutup koneksi
         rs.close();
         st.close();
 
     } catch (SQLException e) {
-        // Tampilkan pesan kesalahan jika terjadi masalah dengan SQL
+        // Tampilkan error jika terjadi
         JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
     }
 }
-
 private void tampilkanLaporan() {
     DefaultTableModel model = (DefaultTableModel) jtabelpemasukan.getModel();
     model.setRowCount(0); // Membersihkan tabel sebelum menambahkan data baru
 
     try {
-        // Ambil tanggal awal dan akhir dari komponen JCalendar
+        // Ambil tanggal awal dan akhir dari JCalendar
         java.util.Date startDate = ctanggalawal.getDate();
         java.util.Date endDate = ctanggalakhir.getDate();
 
-        // Validasi tanggal awal harus diisi
         if (startDate == null) {
             JOptionPane.showMessageDialog(this, "Harap isi tanggal awal!");
             return;
         }
 
-        // Jika tanggal akhir kosong, gunakan tanggal awal sebagai akhir
         if (endDate == null) {
             endDate = startDate;
         }
 
-        // Konversi tanggal ke format SQL (YYYY-MM-DD)
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String tanggalMulai = dateFormat.format(startDate);
         String tanggalAkhir = dateFormat.format(endDate);
 
-        // Debugging: Tampilkan tanggal yang digunakan dalam query
-        System.out.println("Tanggal Mulai: " + tanggalMulai);
-        System.out.println("Tanggal Akhir: " + tanggalAkhir);
+        // Format angka Indonesia
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        symbols.setDecimalSeparator(',');
+        DecimalFormat df = new DecimalFormat("#,##0.##", symbols);
 
-        // Query SQL untuk mengambil data dalam rentang tanggal
-        String sql = "SELECT tj.id_transaksi_jual, DATE(tj.tanggal) AS tanggal, "
-                   + "tj.id_barang, b.nama_barang, tj.jumlah, b.harga, tj.username, "
-                   + "(b.harga * tj.jumlah) AS total_harga "
-                   + "FROM transaksi_jual tj "
-                   + "INNER JOIN barang b ON tj.id_barang = b.id_barang "
-                   + "INNER JOIN akun a ON tj.username = a.username "
+        // SQL Query dengan join
+        String sql = "SELECT id_transaksi, tanggal AS tanggal_transaksi, "
+                   + "id_barang, merk_barang, jenis_barang, size, "
+                   + "harga AS harga_satuan, jumlah, "
+                   + "(harga * jumlah) AS total_harga "
+                   + "FROM penjualan tj "
                    + "WHERE DATE(tj.tanggal) BETWEEN ? AND ? "
-                   + "ORDER BY tj.id_transaksi_jual";
+                   + "ORDER BY tj.id_transaksi";
 
         PreparedStatement st = conn.prepareStatement(sql);
         st.setString(1, tanggalMulai);
@@ -145,62 +147,57 @@ private void tampilkanLaporan() {
         ResultSet rs = st.executeQuery();
 
         BigDecimal totalPemasukan = BigDecimal.ZERO;
-        DecimalFormat df = new DecimalFormat("#,###.##");
+        boolean adaData = false;
 
-        // Header kolom tabel
-        Object[] columnNames = {"ID Transaksi", "Tanggal", 
-                                "ID Barang", "Nama Barang", "Harga", "Jumlah", "Total Harga"};
+        Object[] columnNames = {"ID Transaksi", "Tanggal_transaksi", 
+                                "ID Barang","jenis_barang", "Merk Barang", "Harga_Satuan", "Jumlah", "Total Harga"};
         model.setColumnIdentifiers(columnNames);
 
-        // Iterasi hasil query dan tambahkan data ke tabel
-        boolean adaData = false;
         while (rs.next()) {
             adaData = true;
-            String id_transaksi_jual = rs.getString("id_transaksi_jual");
-            String tgl_jual = rs.getString("tanggal");
-            BigDecimal harga = rs.getBigDecimal("harga");
+            String id_transaksi_jual = rs.getString("id_transaksi");
+            String tgl_jual = rs.getString("tanggal_transaksi");
             String id_barang = rs.getString("id_barang");
-            String nama_barang = rs.getString("nama_barang");
+            String merk_barang = rs.getString("merk_barang");
+            BigDecimal harga_satuan = rs.getBigDecimal("harga_satuan");
             int jumlah = rs.getInt("jumlah");
 
-            // Hitung total harga untuk baris ini
-            BigDecimal total_harga = harga.multiply(new BigDecimal(jumlah));
+            BigDecimal total_harga = harga_satuan.multiply(BigDecimal.valueOf(jumlah));
 
-            // Tambahkan data ke tabel
-            Object[] rowData = {id_transaksi_jual, tgl_jual, 
-                                id_barang, nama_barang, df.format(harga), jumlah, df.format(total_harga)};
+            Object[] rowData = {
+                id_transaksi_jual, tgl_jual,
+                id_barang, merk_barang,
+                "Rp " + df.format(harga_satuan),
+                jumlah,
+                "Rp " + df.format(total_harga)
+            };
             model.addRow(rowData);
 
-            // Tambahkan total harga ke total pemasukan
             totalPemasukan = totalPemasukan.add(total_harga);
         }
 
-        // Jika tidak ada data, tampilkan pesan
         if (!adaData) {
             JOptionPane.showMessageDialog(this, "Tidak ada data untuk rentang tanggal tersebut.");
         }
 
-        // Tampilkan total pemasukan
         if (totalPemasukan.compareTo(BigDecimal.ZERO) > 0) {
-            totallabel.setText("Rp " + df.format(totalPemasukan));
+            totallabel.setText("Total Pemasukan: Rp " + df.format(totalPemasukan));
         } else {
-            totallabel.setText("Rp 0");
+            totallabel.setText("Total Pemasukan: Rp 0");
         }
 
-        // Tutup sumber daya
         rs.close();
         st.close();
 
     } catch (SQLException e) {
-        // Tampilkan pesan kesalahan jika ada masalah dengan SQL
-        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        JOptionPane.showMessageDialog(this, "Error SQL: " + e.getMessage());
     } catch (Exception e) {
-        // Tampilkan pesan kesalahan jika ada masalah umum
         JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
     }
 }
+
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
@@ -230,13 +227,13 @@ private void tampilkanLaporan() {
 
         jtabelpemasukan.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "id_transaksi", "tanggal_transaksi", "id_barang", "jenis_barang", "merk_barang", "size", "harga_satuan", "jumlah"
             }
         ));
         jScrollPane1.setViewportView(jtabelpemasukan);
@@ -244,11 +241,11 @@ private void tampilkanLaporan() {
         getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 90, -1, -1));
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }// </editor-fold>                        
 
-    private void totallabelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_totallabelActionPerformed
+    private void totallabelActionPerformed(java.awt.event.ActionEvent evt) {                                           
         // TODO add your handling code here:
-    }//GEN-LAST:event_totallabelActionPerformed
+    }                                          
 
     /**
      * @param args the command line arguments
@@ -285,7 +282,7 @@ private void tampilkanLaporan() {
         });
     }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify                     
     private com.toedter.calendar.JDateChooser ctanggalakhir;
     private com.toedter.calendar.JDateChooser ctanggalawal;
     private javax.swing.JLabel icon;
@@ -293,5 +290,5 @@ private void tampilkanLaporan() {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jtabelpemasukan;
     private javax.swing.JTextField totallabel;
-    // End of variables declaration//GEN-END:variables
+    // End of variables declaration                   
 }
